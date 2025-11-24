@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trace - A Deep Breath for Your Mind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #F2F0E9;
+            color: #2C2C2C;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            background: #F2F0E9;
+            /* Add subtle grain texture */
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+        }
+        
+        .content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+            max-width: 600px;
+            padding: 40px;
+        }
+        
+        .content h1 {
+            font-size: 48px;
+            font-weight: 300;
+            margin-bottom: 20px;
+            color: #2C2C2C;
+            opacity: 0.9;
+        }
+        
+        .content p {
+            font-size: 18px;
+            font-weight: 300;
+            color: rgba(44, 44, 44, 0.7);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .prompt {
+            font-size: 16px;
+            color: rgba(44, 44, 44, 0.5);
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .waitlist-form {
+            pointer-events: all;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .waitlist-form.visible {
+            opacity: 1;
+        }
+        
+        input[type="email"] {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 16px;
+            border: 1px solid rgba(44, 44, 44, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2C2C2C;
+            margin-bottom: 16px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        input[type="email"]:focus {
+            outline: none;
+            border-color: #7A8B72;
+        }
+        
+        button {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 16px;
+            background: #7A8B72;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+            transition: background 0.3s ease;
+        }
+        
+        button:hover {
+            background: #6a7b62;
+        }
+        
+        .success-message {
+            display: none;
+            font-size: 18px;
+            color: #7A8B72;
+            margin-top: 20px;
+        }
+        
+        .success-message.visible {
+            display: block;
+        }
+        
+        .breathing-dot {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: rgba(122, 139, 114, 0.6);
+            border-radius: 50%;
+            animation: breathe 4s ease-in-out infinite;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        @keyframes breathe {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.9; }
+        }
+        
+        .instructions {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: rgba(44, 44, 44, 0.4);
+            z-index: 5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="breathing-dot" id="breathingDot"></div>
+    
+    <div class="content">
+        <h1>Trace</h1>
+        <p>This is not a drawing tool.<br>It is a deep breath for your mind.</p>
+        <p class="prompt">Trace a line to join the waitlist.</p>
+        
+        <div class="waitlist-form" id="waitlistForm">
+            <input type="email" id="emailInput" placeholder="your@email.com" required>
+            <button onclick="submitWaitlist()">Join the Sanctuary</button>
+            <p class="success-message" id="successMessage">Welcome. You are on the list.</p>
+        </div>
+    </div>
+    
+    <div class="instructions" id="instructions">
+        Draw on the canvas above to begin
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const breathingDot = document.getElementById('breathingDot');
+        const waitlistForm = document.getElementById('waitlistForm');
+        const instructions = document.getElementById('instructions');
+        
+        let isDrawing = false;
+        let hasDrawn = false;
+        let totalDistance = 0;
+        let lastPoint = null;
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Drawing settings
+        ctx.strokeStyle = '#2C2C2C';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Add imperfection (jitter)
+        function addJitter(x, y) {
+            const jitter = 1.5;
+            return {
+                x: x + (Math.random() - 0.5) * jitter,
+                y: y + (Math.random() - 0.5) * jitter
+            };
+        }
+        
+        // Start drawing
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPosition(e);
+            lastPoint = pos;
+            
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            
+            // Hide breathing dot and instructions
+            breathingDot.style.display = 'none';
+            instructions.style.display = 'none';
+        }
+        
+        // Draw
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchmove', draw);
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            e.preventDefault();
+            hasDrawn = true;
+            
+            const pos = getPosition(e);
+            const jitteredPos = addJitter(pos.x, pos.y);
+            
+            // Calculate distance
+            if (lastPoint) {
+                const dx = pos.x - lastPoint.x;
+                const dy = pos.y - lastPoint.y;
+                totalDistance += Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            ctx.lineTo(jitteredPos.x, jitteredPos.y);
+            ctx.stroke();
+            
+            lastPoint = pos;
+            
+            // Show form after drawing 200px
+            if (totalDistance > 200 && !waitlistForm.classList.contains('visible')) {
+                waitlistForm.classList.add('visible');
+            }
+        }
+        
+        // Stop drawing
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+        
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                ctx.closePath();
+            }
+        }
+        
+        // Get position
+        function getPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        }
+        
+        // Submit waitlist
+        function submitWaitlist() {
+            const email = document.getElementById('emailInput').value;
+            
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            
+            // In production, send to backend
+            console.log('Waitlist signup:', email);
+            
+            // Store locally
+            localStorage.setItem('trace_waitlist_email', email);
+            
+            // Show success
+            document.getElementById('emailInput').style.display = 'none';
+            document.querySelector('button').style.display = 'none';
+            document.getElementById('successMessage').classList.add('visible');
+            
+            // Analytics (if integrated)
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'waitlist_signup', {
+                    'event_category': 'engagement',
+                    'event_label': 'landing_page'
+                });
+            }
+        }
+    </script>
+</body>
+</html>
