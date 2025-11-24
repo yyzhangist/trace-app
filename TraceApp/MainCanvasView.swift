@@ -208,7 +208,6 @@ class CanvasViewModel: ObservableObject {
                 )
                 strokes.append(newStroke)
             }
-            }
         } else {
             // First point
             let renderPoint = RenderPoint(
