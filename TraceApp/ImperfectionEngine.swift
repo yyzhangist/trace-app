@@ -95,9 +95,17 @@ class ImperfectionEngine {
 
 // Drawing stroke model
 struct DrawingStroke: Identifiable {
-    let id = UUID()
+    let id: UUID
     var points: [RenderPoint]
     var color: Color
     var brushType: ImperfectionEngine.BrushType
     var timestamp: Date
+    
+    init(id: UUID = UUID(), points: [RenderPoint], color: Color, brushType: ImperfectionEngine.BrushType, timestamp: Date) {
+        self.id = id
+        self.points = points
+        self.color = color
+        self.brushType = brushType
+        self.timestamp = timestamp
+    }
 }
