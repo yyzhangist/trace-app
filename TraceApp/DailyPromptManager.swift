@@ -63,27 +63,6 @@ extension DrawingStroke: Codable {
     }
 }
 
-extension ImperfectionEngine.BrushType: Codable {
-    var rawValue: String {
-        switch self {
-        case .charcoal: return "charcoal"
-        case .watercolor: return "watercolor"
-        case .pencil: return "pencil"
-        }
-    }
-    
-    init?(rawValue: String) {
-        switch rawValue {
-        case "charcoal": self = .charcoal
-        case "watercolor": self = .watercolor
-        case "pencil": self = .pencil
-        default: return nil
-        }
-    }
-}
-
-extension RenderPoint: Codable {}
-
 // Drawing Manager for persistence
 class DrawingManager {
     static let shared = DrawingManager()

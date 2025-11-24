@@ -8,7 +8,7 @@ struct DrawingPoint: Identifiable {
     var velocity: CGFloat = 0
 }
 
-struct RenderPoint {
+struct RenderPoint: Codable, Equatable {
     var location: CGPoint
     var width: CGFloat
     var opacity: Double
@@ -21,10 +21,10 @@ class ImperfectionEngine {
     
     var brushType: BrushType = .charcoal
     
-    enum BrushType {
-        case charcoal
-        case watercolor
-        case pencil
+    enum BrushType: String, Codable {
+        case charcoal = "charcoal"
+        case watercolor = "watercolor"
+        case pencil = "pencil"
     }
     
     func processStroke(current: DrawingPoint, previous: DrawingPoint) -> RenderPoint {

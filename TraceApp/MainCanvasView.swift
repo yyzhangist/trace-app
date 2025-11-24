@@ -197,18 +197,17 @@ class CanvasViewModel: ObservableObject {
             renderedPoints.append(renderPoint)
             
             // Update current stroke
-            if strokes.isEmpty || strokes.last?.points != renderedPoints {
-                if !strokes.isEmpty {
-                    strokes[strokes.count - 1].points = renderedPoints
-                } else {
-                    let newStroke = DrawingStroke(
-                        points: renderedPoints,
-                        color: currentColor,
-                        brushType: currentBrush,
-                        timestamp: Date()
-                    )
-                    strokes.append(newStroke)
-                }
+            if !strokes.isEmpty {
+                strokes[strokes.count - 1].points = renderedPoints
+            } else {
+                let newStroke = DrawingStroke(
+                    points: renderedPoints,
+                    color: currentColor,
+                    brushType: currentBrush,
+                    timestamp: Date()
+                )
+                strokes.append(newStroke)
+            }
             }
         } else {
             // First point
